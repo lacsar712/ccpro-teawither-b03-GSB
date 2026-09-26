@@ -7,7 +7,15 @@ from .models import Garden, Trough, WitherBatch
 
 
 def ensure_seed_data():
-    """Idempotent seed: users + sample gardens/troughs/batches."""
+    """Idempotent seed: users + sample gardens/troughs/batches.
+
+    资格反例（均不可设为可下槽）：
+      - t2 / A-02：最新批次实测为空 -> 缺实测，不授予资格；
+      - t3 / B-01：最新批次实测 42%，越过可下槽门槛 40% -> 越界实测。
+    正向对照：
+      - t1 / A-01：实测 37.5%，资格满足但保留「萎凋中」（不自动晋升）；
+      - t4 / B-02：实测 34.8%，人工置为「可下槽」。
+    """
     User = get_user_model()
 
     if not User.objects.filter(username="admin").exists():
@@ -37,6 +45,7 @@ def ensure_seed_data():
         loadKg=Decimal("120.50"),
         status=Trough.STATUS_WITHERING,
     )
+    # 反例一：缺实测槽 —— 最新批次 actualMoisture 为空，保存允许，但不可下槽。
     t2 = Trough.objects.create(
         garden=g1,
         troughCode="A-02",
@@ -44,6 +53,7 @@ def ensure_seed_data():
         loadKg=Decimal("95.00"),
         status=Trough.STATUS_LOADING,
     )
+    # 反例二：越界实测槽 —— 最新批次实测 42%（>40% 门槛），保存允许，但不可下槽。
     t3 = Trough.objects.create(
         garden=g2,
         troughCode="B-01",
@@ -92,3 +102,4 @@ def ensure_seed_data():
     )
     t4.status = Trough.STATUS_READY
     t4.save()
+

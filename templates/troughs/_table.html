@@ -6,6 +6,7 @@
       <th>槽位编号</th>
       <th>品种</th>
       <th>装叶量(kg)</th>
+      <th>最新批次实测含水率</th>
       <th>状态</th>
       <th>操作</th>
     </tr>
@@ -17,6 +18,7 @@
       <td>{{ t.troughCode }}</td>
       <td>{{ t.cultivar }}</td>
       <td>{{ t.loadKg }}</td>
+      <td>{% with m=t.latest_actual_moisture %}{% if m != None %}{{ m }}%{% else %}—（未实测）{% endif %}{% endwith %}</td>
       <td><span class="badge badge-{{ t.status }}">{{ t.get_status_display }}</span></td>
       <td class="actions">
         <a class="btn btn-sm btn-secondary" href="{% url 'trough_edit' t.pk %}">编辑</a>
@@ -27,5 +29,5 @@
   </tbody>
 </table>
 {% else %}
-<p class="empty">暂无萎凋槽。</p>
+<p class="empty">{% if current_status %}当前状态下暂无萎凋槽。{% else %}暂无萎凋槽。{% endif %}</p>
 {% endif %}

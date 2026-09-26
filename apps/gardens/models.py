@@ -1,5 +1,30 @@
+from decimal import Decimal
+
 from django.core.exceptions import ValidationError
 from django.db import models
+
+# 实测含水率：可空；一旦填写必须大于 0 且不超过 100。
+ACTUAL_MOISTURE_MIN = Decimal("0")
+ACTUAL_MOISTURE_MAX = Decimal("100")
+ACTUAL_MOISTURE_MESSAGE = "实测含水率若填写须大于 0 且不超过 100。"
+
+# 可下槽门槛：最新批次实测含水率须已填写且不超过该值。
+READY_MOISTURE_LIMIT = Decimal("40")
+READY_REJECT_MESSAGE = (
+    "无法设为可下槽：最新萎凋批次的实测含水率为空或高于 40%。"
+)
+
+
+def validate_actual_moisture(value):
+    """实测含水率唯一规则源：空值放行（可空字段），非空须 0 < 值 <= 100。
+
+    表单字段经模型字段自动挂上同一 validator，直接调用模型保存时由
+    WitherBatch.save -> full_clean 走同一函数，两条路径文案口径一致。
+    """
+    if value is None:
+        return
+    if value <= ACTUAL_MOISTURE_MIN or value > ACTUAL_MOISTURE_MAX:
+        raise ValidationError(ACTUAL_MOISTURE_MESSAGE)
 
 
 class Garden(models.Model):
@@ -57,25 +82,35 @@ class Trough(models.Model):
         return f"{self.garden.name}-{self.troughCode}"
 
     def latest_batch(self):
+        """最新批次的唯一取数入口：改态校验与详情/列表读数都经此方法。"""
         return self.batches.order_by("-startedAt", "-id").first()
+
+    def latest_actual_moisture(self):
+        """最新批次的实测含水率（可能为空）。槽改态入口与页面读数同源。"""
+        latest = self.latest_batch()
+        return latest.actualMoisture if latest else None
+
+    def ready_eligible(self):
+        """是否满足可下槽资格：最新批次实测已填且不超过门槛。空实测不放行。"""
+        moisture = self.latest_actual_moisture()
+        return moisture is not None and moisture <= READY_MOISTURE_LIMIT
+
+    def sync_ready_status(self):
+        """按最新批次实测重算资格：失格的可下槽槽立即回退为萎凋中。
+
+        在批次写入/删除后调用，确保实测一保存就影响可下槽资格。
+        仅在失格时回退，资格满足不自动晋升（改态仍走人工入口与 clean 校验）。
+        """
+        if self.status == self.STATUS_READY and not self.ready_eligible():
+            self.status = self.STATUS_WITHERING
+            super().save(update_fields=["status"])
 
     def clean(self):
         super().clean()
         if self.status != self.STATUS_READY:
             return
-        latest = None
-        if self.pk:
-            latest = (
-                WitherBatch.objects.filter(trough_id=self.pk)
-                .order_by("-startedAt", "-id")
-                .first()
-            )
-        if latest is None or latest.actualMoisture is None or latest.actualMoisture > 40:
-            raise ValidationError(
-                {
-                    "status": "无法设为可下槽：最新萎凋批次的实测含水率为空或高于 40%。"
-                }
-            )
+        if not self.ready_eligible():
+            raise ValidationError({"status": READY_REJECT_MESSAGE})
 
     def save(self, *args, **kwargs):
         self.full_clean()
@@ -99,6 +134,7 @@ class WitherBatch(models.Model):
         decimal_places=2,
         null=True,
         blank=True,
+        validators=[validate_actual_moisture],
     )
     rollGrade = models.CharField("揉捻等级", max_length=40)
 
@@ -109,3 +145,16 @@ class WitherBatch(models.Model):
 
     def __str__(self):
         return f"{self.trough} @ {self.startedAt:%Y-%m-%d %H:%M}"
+
+    def save(self, *args, **kwargs):
+        # 直接模型保存路径：与 ModelForm 提交走同一条 full_clean + 字段 validator。
+        self.full_clean()
+        super().save(*args, **kwargs)
+        # 实测一落库立即重算所属槽资格（失格则可下槽槽回退）。
+        self.trough.sync_ready_status()
+
+    def delete(self, *args, **kwargs):
+        trough = self.trough
+        super().delete(*args, **kwargs)
+        # 最新批次被删后，所属槽可能因失去合格实测而失格。
+        trough.sync_ready_status()

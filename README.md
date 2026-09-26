@@ -54,7 +54,16 @@ python manage.py runserver 0.0.0.0:4100
 2. **Trough（萎凋槽）**：归属茶园、`troughCode`、`cultivar`、`loadKg`、状态 `loading|withering|ready`；同一茶园内槽位编号唯一
 3. **WitherBatch（萎凋批次）**：归属槽位、`startedAt`、`targetMoisture`、`actualMoisture`（可空）、`rollGrade`
 
-**业务规则**：将槽位状态设为 `ready`（可下槽）时，若最新批次的 `actualMoisture` 为空或大于 40，抛出中文 `ValidationError`。
+**业务规则（表单与模型同源）**：
+
+- **实测含水率取值范围**：`actualMoisture` 留空允许保存；一旦填写必须**大于 0 且不超过 100**。该规则只有一个源头——模型字段上的 `validate_actual_moisture`：
+  - 表单提交路径：`ModelForm` 自动挂载同一 validator；
+  - 直接模型保存路径：`WitherBatch.save()` 调 `full_clean()` 触发同一 validator。
+  - 两条路径对非法值都以同一句中文拒绝：`实测含水率若填写须大于 0 且不超过 100。`
+- **可下槽资格**：槽位置为 `ready`（可下槽）时，最新批次（按 `startedAt, id` 倒序）实测含水率须**已填写且不超过 40%**，否则 `Trough.clean` 抛出中文 `ValidationError`。空实测可以保存批次，但不会让槽变成可下槽。
+- **写完立即影响资格**：批次 `save()`/`delete()` 后立即重算所属槽资格——若原可下槽槽的最新实测变为空或高于 40%，状态自动回退为「萎凋中」。
+- **读数同源**：槽改态校验与页面（槽列表「最新批次实测」列、批次详情/列表）都经由 `Trough.latest_batch()` / `latest_actual_moisture()` 取数，不存在改态读数与页面显示分叉。
+- **首页对账**：首页「可下槽」只统计 `status=ready` 的槽位；点击该卡片跳转槽列表 `?status=ready`，筛选行数与首页计数同一查询口径，可逐行对账。
 
 ## 种子数据
 
@@ -63,6 +72,13 @@ python manage.py seed_data
 ```
 
 幂等：已有茶园则只保证账号存在。亦可在环境变量 `TEAWITHER_AUTO_SEED=1` 时于 `post_migrate` 自动播种。
+
+种子内含两笔**资格反例**：
+
+- `A-02`：最新批次实测为空（缺实测槽）——批次可保存，但槽不可下槽；
+- `B-01`：最新批次实测 `42.00%`（越界实测，越过 40% 门槛；42 仍在 0–100 字段合法范围内故批次可存）——槽不可下槽。
+
+另含正向对照：`A-01`（37.5%，保留萎凋中）与 `B-02`（34.8%，置为可下槽）。
 
 ## 目录结构
 

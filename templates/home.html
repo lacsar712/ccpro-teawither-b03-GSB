@@ -10,7 +10,9 @@
   <div class="stat"><div class="num">{{ batch_count }}</div><div class="label">萎凋批次</div></div>
   <div class="stat"><div class="num">{{ loading_count }}</div><div class="label">装叶中</div></div>
   <div class="stat"><div class="num">{{ withering_count }}</div><div class="label">萎凋中</div></div>
-  <div class="stat"><div class="num">{{ ready_count }}</div><div class="label">可下槽</div></div>
+  <a class="stat stat-link" href="{% url 'trough_list' %}?status=ready">
+    <div class="num">{{ ready_count }}</div><div class="label">可下槽（点击对账）</div>
+  </a>
 </div>
-<p class="muted" style="margin-top:1.25rem">规则提示：槽位设为「可下槽」时，最新批次实测含水率须已填写且不超过 40%。</p>
+<p class="muted" style="margin-top:1.25rem">规则提示：批次实测含水率若填写须大于 0 且不超过 100%，空实测可保存但不授予可下槽资格；槽位设为「可下槽」时，最新批次实测含水率须已填写且不超过 40%。首页「可下槽」只统计状态已是可下槽的槽位，点击可与列表「可下槽」筛选行数对账。</p>
 {% endblock %}

@@ -101,14 +101,31 @@ class TroughListView(LoginRequiredMixin, ListView):
     context_object_name = "troughs"
 
     def get_queryset(self):
-        return Trough.objects.select_related("garden").all()
+        queryset = Trough.objects.select_related("garden").all()
+        status = self.request.GET.get("status", "")
+        if status in {
+            Trough.STATUS_LOADING,
+            Trough.STATUS_WITHERING,
+            Trough.STATUS_READY,
+        }:
+            queryset = queryset.filter(status=status)
+        return queryset
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["current_status"] = self.request.GET.get("status", "")
+        context["status_choices"] = Trough.STATUS_CHOICES
+        return context
 
     def get(self, request, *args, **kwargs):
         self.object_list = self.get_queryset()
         if _wants_htmx(request):
             html = render_to_string(
                 "troughs/_table.html",
-                {"troughs": self.object_list},
+                {
+                    "troughs": self.object_list,
+                    "current_status": request.GET.get("status", ""),
+                },
                 request=request,
             )
             return HttpResponse(html)
