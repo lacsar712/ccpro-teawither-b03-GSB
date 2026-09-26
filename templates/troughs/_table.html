@@ -6,6 +6,7 @@
       <th>槽位编号</th>
       <th>品种</th>
       <th>装叶量(kg)</th>
+      <th>最新批次实测含水率</th>
       <th>状态</th>
       <th>操作</th>
     </tr>
@@ -14,9 +15,11 @@
     {% for t in troughs %}
     <tr>
       <td>{{ t.garden.name }}</td>
-      <td>{{ t.troughCode }}</td>
+      <td><a href="{% url 'trough_detail' t.pk %}">{{ t.troughCode }}</a></td>
       <td>{{ t.cultivar }}</td>
       <td>{{ t.loadKg }}</td>
+      {# 列表与详情/改态判定共用 latest_actual_moisture()，不分叉。 #}
+      <td>{% with m=t.latest_actual_moisture %}{% if m != None %}{{ m }}%{% else %}—{% endif %}{% endwith %}</td>
       <td><span class="badge badge-{{ t.status }}">{{ t.get_status_display }}</span></td>
       <td class="actions">
         <a class="btn btn-sm btn-secondary" href="{% url 'trough_edit' t.pk %}">编辑</a>

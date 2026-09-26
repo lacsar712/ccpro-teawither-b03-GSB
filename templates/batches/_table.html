@@ -13,7 +13,7 @@
   <tbody>
     {% for b in batches %}
     <tr>
-      <td>{{ b.trough.garden.name }} / {{ b.trough.troughCode }}</td>
+      <td><a href="{% url 'batch_detail' b.pk %}">{{ b.trough.garden.name }} / {{ b.trough.troughCode }}</a></td>
       <td>{{ b.startedAt|date:"Y-m-d H:i" }}</td>
       <td>{{ b.targetMoisture }}%</td>
       <td>{% if b.actualMoisture != None %}{{ b.actualMoisture }}%{% else %}—{% endif %}</td>

@@ -5,11 +5,18 @@
   <h1>萎凋槽</h1>
   <div class="actions">
     <button class="btn btn-secondary btn-sm"
-            hx-get="{% url 'trough_list' %}"
+            hx-get="{% url 'trough_list' %}{% if active_status %}?status={{ active_status }}{% endif %}"
             hx-target="#trough-table"
             hx-swap="innerHTML">刷新列表</button>
     <a class="btn" href="{% url 'trough_create' %}">新建槽位</a>
   </div>
+</div>
+{# 「可下槽」数字与首页同源（QuerySet.ready().count()），点击即按可下槽筛选对账。 #}
+<div class="actions" style="margin-bottom:.75rem;gap:.5rem">
+  <a class="btn btn-sm {% if active_status == '' %}btn-secondary{% else %}btn-secondary{% endif %}" href="{% url 'trough_list' %}">全部</a>
+  <a class="btn btn-sm btn-secondary" href="{% url 'trough_list' %}?status=ready">可下槽（{{ ready_count }}）</a>
+  <a class="btn btn-sm btn-secondary" href="{% url 'trough_list' %}?status=withering">萎凋中（{{ withering_count }}）</a>
+  <a class="btn btn-sm btn-secondary" href="{% url 'trough_list' %}?status=loading">装叶中（{{ loading_count }}）</a>
 </div>
 <div class="card" id="trough-table">
   {% include "troughs/_table.html" %}

@@ -10,7 +10,10 @@
   <div class="stat"><div class="num">{{ batch_count }}</div><div class="label">萎凋批次</div></div>
   <div class="stat"><div class="num">{{ loading_count }}</div><div class="label">装叶中</div></div>
   <div class="stat"><div class="num">{{ withering_count }}</div><div class="label">萎凋中</div></div>
-  <div class="stat"><div class="num">{{ ready_count }}</div><div class="label">可下槽</div></div>
+  <a class="stat" href="{% url 'trough_list' %}?status=ready" style="text-decoration:none">
+    {# 只计 status=ready 的槽；与列表 ?status=ready 同走 QuerySet.ready()，行数必然对账。 #}
+    <div class="num">{{ ready_count }}</div><div class="label">可下槽</div>
+  </a>
 </div>
-<p class="muted" style="margin-top:1.25rem">规则提示：槽位设为「可下槽」时，最新批次实测含水率须已填写且不超过 40%。</p>
+<p class="muted" style="margin-top:1.25rem">规则提示：实测含水率填写时必须大于 0 且不超过 100（可留空）；槽位设为「可下槽」时，最新批次实测含水率须已填写且不超过 40%。批次实测保存后立即重算所属槽资格。</p>
 {% endblock %}

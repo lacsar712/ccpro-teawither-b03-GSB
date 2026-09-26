@@ -16,6 +16,7 @@
     </div>
     {% endfor %}
     {{ form.non_field_errors }}
+    <p class="muted">实测含水率可留空；一旦填写必须大于 0 且不超过 100。保存后立即重算所属槽的可下槽资格。</p>
     <button class="btn" type="submit">保存</button>
   </form>
 </div>

@@ -20,4 +20,29 @@
     <button class="btn" type="submit">保存</button>
   </form>
 </div>
+
+{% if object and object.pk %}
+{# 改态入口面板：latest_batch/latest_moisture/ready_reason 与槽详情页、模型 clean 同源，避免改态读数分叉。 #}
+<div class="card">
+  <h2 style="margin-top:0">可下槽资格（改态依据）</h2>
+  <p>
+    最新批次：
+    {% if latest_batch %}
+      <a href="{% url 'batch_detail' latest_batch.pk %}">{{ latest_batch.startedAt|date:"Y-m-d H:i" }}</a>
+    {% else %}
+      无
+    {% endif %}
+  </p>
+  <p>
+    最新批次实测含水率：
+    {% if latest_moisture != None %}<strong>{{ latest_moisture }}%</strong>{% else %}<strong>未填写</strong>{% endif %}
+  </p>
+  {% if ready_reason %}
+  <p class="muted" style="color:#b3541e">{{ ready_reason }}</p>
+  {% else %}
+  <p class="muted" style="color:#2e7d32">已具备「可下槽」资格。</p>
+  {% endif %}
+  <p><a class="btn btn-secondary btn-sm" href="{% url 'trough_detail' object.pk %}">查看槽位详情</a></p>
+</div>
+{% endif %}
 {% endblock %}

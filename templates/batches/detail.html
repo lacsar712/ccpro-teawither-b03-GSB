@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% block title %}批次 {{ batch }}{% endblock %}
+{% block content %}
+<div class="page-header">
+  <h1>萎凋批次 · {{ batch.trough }}</h1>
+  <div class="actions">
+    <a class="btn btn-secondary" href="{% url 'batch_list' %}">返回列表</a>
+    <a class="btn" href="{% url 'batch_edit' batch.pk %}">编辑</a>
+  </div>
+</div>
+
+<div class="card">
+  <table class="data">
+    <tbody>
+      <tr><th>茶园 / 槽位</th><td>{{ batch.trough.garden.name }} / {{ batch.trough.troughCode }}</td></tr>
+      <tr><th>开始时间</th><td>{{ batch.startedAt|date:"Y-m-d H:i" }}</td></tr>
+      <tr><th>目标含水率</th><td>{{ batch.targetMoisture }}%</td></tr>
+      <tr><th>实测含水率</th><td>{% if batch.actualMoisture != None %}{{ batch.actualMoisture }}%{% else %}—（未填写）{% endif %}</td></tr>
+      <tr><th>揉捻等级</th><td>{{ batch.rollGrade }}</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<div class="card">
+  {# 槽改态读取的最新实测：直接引用 trough.latest_batch()/latest_actual_moisture()，与槽详情、模型 clean 同源。 #}
+  <h2 style="margin-top:0">所属槽「可下槽」判定依据</h2>
+  <p>
+    改态时读取的最新批次：
+    {% if trough_latest %}
+      <a href="{% url 'batch_detail' trough_latest.pk %}">{{ trough_latest.startedAt|date:"Y-m-d H:i" }}</a>
+      {% if is_trough_latest %}（即本批次）{% else %}（不是本批次，槽位改态以更新一笔为准）{% endif %}
+    {% else %}
+      无
+    {% endif %}
+  </p>
+  <p>
+    改态时读取的实测含水率：
+    {% if trough_latest_moisture != None %}<strong>{{ trough_latest_moisture }}%</strong>{% else %}<strong>未填写</strong>{% endif %}
+    {% if is_trough_latest and batch.actualMoisture != None %}——与本批次实测一致。{% endif %}
+  </p>
+  {% if ready_reason %}
+  <p class="muted" style="color:#b3541e">{{ ready_reason }}</p>
+  {% else %}
+  <p class="muted" style="color:#2e7d32">所属槽具备「可下槽」资格（最新实测已填写且不超过 40%）。</p>
+  {% endif %}
+  <p><a class="btn btn-secondary btn-sm" href="{% url 'trough_detail' batch.trough_id %}">查看槽位详情</a></p>
+</div>
+{% endblock %}

@@ -19,6 +19,11 @@ urlpatterns = [
     path("troughs/", views.TroughListView.as_view(), name="trough_list"),
     path("troughs/new/", views.TroughCreateView.as_view(), name="trough_create"),
     path(
+        "troughs/<int:pk>/",
+        views.TroughDetailView.as_view(),
+        name="trough_detail",
+    ),
+    path(
         "troughs/<int:pk>/edit/",
         views.TroughUpdateView.as_view(),
         name="trough_edit",
@@ -30,6 +35,11 @@ urlpatterns = [
     ),
     path("batches/", views.BatchListView.as_view(), name="batch_list"),
     path("batches/new/", views.BatchCreateView.as_view(), name="batch_create"),
+    path(
+        "batches/<int:pk>/",
+        views.BatchDetailView.as_view(),
+        name="batch_detail",
+    ),
     path(
         "batches/<int:pk>/edit/",
         views.BatchUpdateView.as_view(),

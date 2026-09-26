@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block title %}槽位 {{ trough }}{% endblock %}
+{% block content %}
+<div class="page-header">
+  <h1>{{ trough }}</h1>
+  <div class="actions">
+    <a class="btn btn-secondary" href="{% url 'trough_list' %}">返回列表</a>
+    <a class="btn" href="{% url 'trough_edit' trough.pk %}">编辑 / 改态</a>
+  </div>
+</div>
+
+<div class="card">
+  <table class="data">
+    <tbody>
+      <tr><th>茶园</th><td>{{ trough.garden.name }}</td></tr>
+      <tr><th>槽位编号</th><td>{{ trough.troughCode }}</td></tr>
+      <tr><th>品种</th><td>{{ trough.cultivar }}</td></tr>
+      <tr><th>装叶量(kg)</th><td>{{ trough.loadKg }}</td></tr>
+      <tr><th>当前状态</th><td><span class="badge badge-{{ trough.status }}">{{ trough.get_status_display }}</span></td></tr>
+    </tbody>
+  </table>
+</div>
+
+<div class="card">
+  {# 改态入口（编辑页）与模型校验读的就是 trough.latest_batch() / latest_actual_moisture() 这一组同源方法。 #}
+  <h2 style="margin-top:0">可下槽资格</h2>
+  <p>
+    最新批次：
+    {% if latest_batch %}
+      <a href="{% url 'batch_detail' latest_batch.pk %}">{{ latest_batch.startedAt|date:"Y-m-d H:i" }}</a>
+    {% else %}
+      无
+    {% endif %}
+  </p>
+  <p>
+    最新批次实测含水率：
+    {% if latest_moisture != None %}<strong>{{ latest_moisture }}%</strong>{% else %}<strong>未填写</strong>{% endif %}
+  </p>
+  {% if ready_reason %}
+  <p class="muted" style="color:#b3541e">{{ ready_reason }}</p>
+  {% else %}
+  <p class="muted" style="color:#2e7d32">最新批次实测含水率已填写且不超过 40%，具备「可下槽」资格。</p>
+  {% endif %}
+</div>
+{% endblock %}
